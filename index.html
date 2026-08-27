@@ -199,9 +199,9 @@ const AGE_RANGE = {
 const LOMBA = {
   TKA: [
     { nama:"Tartil Al-Qur'an", tipe:"individu" },
-    { nama:"Adzan dan Iqomah", tipe:"kelompok" },
+    { nama:"Adzan dan Iqomah", tipe:"individu", klasifikasiTetap:"Putra" },
     { nama:"Peragaan Shalat", tipe:"individu" },
-    { nama:"Ikrar & Puitisasi Tarjamah Al-Qur'an", tipe:"individu" },
+    { nama:"Ikrar & Puitisasi Tarjamah Al-Qur'an", tipe:"kelompok" },
     { nama:"Nasyid Islami", tipe:"kelompok" },
     { nama:"Cerdas Cermat Al-Qur'an", tipe:"kelompok" },
     { nama:"Mewarnai Gambar", tipe:"individu" },
@@ -210,7 +210,7 @@ const LOMBA = {
   TPA: [
     { nama:"Tartil Al-Qur'an", tipe:"individu" },
     { nama:"Adzan dan Iqomah", tipe:"individu", klasifikasiTetap:"Putra" },
-    { nama:"Ikrar & Puitisasi Tarjamah Al-Qur'an", tipe:"individu" },
+    { nama:"Ikrar & Puitisasi Tarjamah Al-Qur'an", tipe:"kelompok" },
     { nama:"Nasyid Islami", tipe:"kelompok" },
     { nama:"Cerdas Cermat Al-Qur'an", tipe:"kelompok" },
     { nama:"Menggambar", tipe:"individu" },
@@ -231,8 +231,8 @@ const LOMBA = {
 let state = {
   step: 0,
   tpa: { id: null, nama: "", kelurahan: "" },
-  peserta: [],   // {rowId, nomor, nama, kategori, cabang, klasifikasi, tanggalLahir, statusUsia, fileName, fileData}
-  kelompok: [],  // {rowId, nomor, namaKelompok, kategori, cabang, anggota:[{nama,tanggalLahir,statusUsia,fileName,fileData}]}
+  peserta: [],   // {rowIndex, nomor, nama, kategori, cabang, klasifikasi, tanggalLahir, statusUsia, fileName, fileData}
+  kelompok: [],  // {rowIndexes:[...], nomor, namaKelompok, kategori, cabang, anggota:[{nama,tanggalLahir,statusUsia,fileName,fileData}]}
   pembayaran: { fileName:null, fileData:null, terkirim:false },
   modal: null    // 'individu' | 'kelompok' | null
 };
@@ -302,12 +302,20 @@ async function callApi(action, payload){
 }
 
 let demoCounter = { TKA:0, TPA:0, TQA:0 };
+let demoRowCounter = 0;
 function demoResponse(action, payload){
   if (action==="addTPA") return { tpaId: "DEMO-TPA-"+Date.now() };
-  if (action==="addPeserta" || action==="addKelompok"){
+  if (action==="addPeserta"){
     demoCounter[payload.kategori] = (demoCounter[payload.kategori]||0)+1;
     const num = String(demoCounter[payload.kategori]).padStart(4,'0');
-    return { nomor: payload.kategori+"-"+num, rowIndex: demoCounter[payload.kategori] };
+    demoRowCounter++;
+    return { nomor: payload.kategori+"-"+num, rowIndex: demoRowCounter };
+  }
+  if (action==="addKelompok"){
+    demoCounter[payload.kategori] = (demoCounter[payload.kategori]||0)+1;
+    const num = String(demoCounter[payload.kategori]).padStart(4,'0');
+    const rowIndexes = (payload.anggota||[]).map(()=>{ demoRowCounter++; return demoRowCounter; });
+    return { nomor: "KEL-"+payload.kategori+"-"+num, rowIndexes: rowIndexes };
   }
   return {};
 }
@@ -425,7 +433,7 @@ function renderPesertaStep(){
   });
   c.querySelectorAll('[data-del-k]').forEach(b=> b.onclick=async(e)=>{
     const idx = +e.target.dataset.delK;
-    await callApi('deleteKelompok', { rowIndex: state.kelompok[idx].rowIndex });
+    await callApi('deleteKelompok', { rowIndexes: state.kelompok[idx].rowIndexes });
     state.kelompok.splice(idx,1); render();
   });
   return c;
@@ -449,9 +457,10 @@ function kelompokRowHtml(k,i){
   const semuaOk = k.anggota.every(a=>a.statusUsia.sesuai);
   const pillCls = semuaOk ? 'pill-ok':'pill-warn';
   const pillTxt = semuaOk ? 'Sesuai':'Ada anggota tidak sesuai';
+  const namaAnggota = k.anggota.map(a=>a.nama).join(', ');
   return `<tr>
     <td><b>${k.nomor}</b></td>
-    <td>${k.namaKelompok} <span style="color:#a58f8f;font-size:11.5px;">(${k.anggota.length} anggota)</span></td>
+    <td>${k.namaKelompok}<br><span style="color:#a58f8f;font-size:11.5px;">${namaAnggota}</span></td>
     <td><span class="pill pill-cat">${k.kategori}</span></td>
     <td>${k.cabang}</td>
     <td>Kelompok</td>
@@ -536,7 +545,12 @@ function renderFormIndividu(){
       });
     }
   };
-  wrap.querySelector('#m-nama').oninput = (e)=> form.nama = e.target.value;
+  wrap.querySelector('#m-nama').oninput = (e)=>{
+    const pos = e.target.selectionStart;
+    e.target.value = e.target.value.toUpperCase();
+    e.target.setSelectionRange(pos,pos);
+    form.nama = e.target.value;
+  };
   wrap.querySelector('#m-tgl').onchange = (e)=>{ form.tgl = e.target.value; updateAgeBox(); };
   function updateAgeBox(){
     const box = wrap.querySelector('#m-age-box');
@@ -606,8 +620,13 @@ function renderFormKelompok(){
       box.appendChild(row);
     });
     box.querySelectorAll('.rm').forEach(b=> b.onclick=()=>{ form.anggota.splice(+b.dataset.i,1); renderAnggota(); });
-    box.querySelectorAll('input[data-f]').forEach(inp=> inp.onchange = inp.oninput = (e)=>{
+    box.querySelectorAll('input[data-f]').forEach(inp=> inp.oninput = (e)=>{
       const i=+e.target.dataset.i, f=e.target.dataset.f;
+      if (f==='nama'){
+        const pos = e.target.selectionStart;
+        e.target.value = e.target.value.toUpperCase();
+        e.target.setSelectionRange(pos,pos);
+      }
       form.anggota[i][f] = e.target.value;
       if(f==='tgl') renderAnggota();
     });
@@ -666,7 +685,7 @@ function renderFormKelompok(){
         biaya: FEE_KELOMPOK
       });
       if(!res.success) throw new Error(res.error||'Gagal menyimpan kelompok');
-      state.kelompok.push({ rowIndex: res.data.rowIndex, nomor: res.data.nomor, namaKelompok: form.namaKelompok.trim(), kategori: form.kategori, cabang: form.cabang, anggota: anggotaFinal });
+      state.kelompok.push({ rowIndexes: res.data.rowIndexes, nomor: res.data.nomor, namaKelompok: form.namaKelompok.trim(), kategori: form.kategori, cabang: form.cabang, anggota: anggotaFinal });
       state.modal = null; render();
     }catch(err){ alert('Gagal: '+err.message); btn.disabled=false; btn.textContent='Simpan Kelompok'; }
   };
@@ -712,7 +731,8 @@ function pesertaRowHtmlReadonly(p){
   return `<tr><td><b>${p.nomor}</b></td><td>${p.nama}</td><td>${p.kategori}</td><td>${p.cabang}</td><td>${p.klasifikasi}</td><td>${money(FEE_INDIVIDU)}</td></tr>`;
 }
 function kelompokRowHtmlReadonly(k){
-  return `<tr><td><b>${k.nomor}</b></td><td>${k.namaKelompok}</td><td>${k.kategori}</td><td>${k.cabang}</td><td>${k.anggota.length} orang</td><td>${money(FEE_KELOMPOK)}</td></tr>`;
+  const namaAnggota = k.anggota.map(a=>a.nama).join(', ');
+  return `<tr><td><b>${k.nomor}</b></td><td>${k.namaKelompok}</td><td>${k.kategori}</td><td>${k.cabang}</td><td>${namaAnggota}</td><td>${money(FEE_KELOMPOK)}</td></tr>`;
 }
 
 /* ---- STEP 3: Pembayaran ---- */
@@ -791,7 +811,11 @@ function generateCocardPDF(){
   const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:[148,105] });
   const items = [];
   state.peserta.forEach(p=> items.push({ nomor:p.nomor, nama:p.nama, ket:p.cabang+' - '+p.kategori }));
-  state.kelompok.forEach(k=> items.push({ nomor:k.nomor, nama:k.namaKelompok+' (Tim)', ket:k.cabang+' - '+k.kategori, anggota:k.anggota.map(a=>a.nama).join(', ') }));
+  state.kelompok.forEach(k=>{
+    k.anggota.forEach(a=>{
+      items.push({ nomor:k.nomor, namaTim:k.namaKelompok, nama:a.nama, ket:k.cabang+' - '+k.kategori });
+    });
+  });
 
   items.forEach((it,i)=>{
     if(i>0) doc.addPage([148,105],'landscape');
@@ -816,17 +840,24 @@ function generateCocardPDF(){
     }
     field('NAMA', it.nama, 12);
     field('CABANG LOMBA - TINGKAT', it.ket, 32);
+
     doc.setFillColor(255,255,255);
     doc.roundedRect(60, 52, 82, 44, 2, 2, 'F');
     doc.setTextColor(150,20,20); doc.setFontSize(8); doc.setFont('helvetica','bold');
     doc.text('NOMOR PESERTA', 63, 58);
-    doc.setTextColor(30,15,15); doc.setFontSize(22); doc.setFont('times','bold');
-    doc.text(it.nomor, 63, 72);
-    if (it.anggota){
-      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90,70,70);
-      const lines = doc.splitTextToSize('Anggota: '+it.anggota, 76);
-      doc.text(lines, 63, 82);
+    if (it.namaTim){
+      // Kartu anggota kelompok: nomor kelompok di atas, nama tim di bawahnya
+      doc.setTextColor(30,15,15); doc.setFontSize(17); doc.setFont('times','bold');
+      doc.text(it.nomor, 63, 70);
+      doc.setFontSize(11); doc.setFont('helvetica','bold'); doc.setTextColor(120,25,25);
+      const timLines = doc.splitTextToSize(it.namaTim, 76);
+      doc.text(timLines, 63, 79);
+    } else {
+      // Kartu peserta individu: nomor peserta besar, satu baris
+      doc.setTextColor(30,15,15); doc.setFontSize(22); doc.setFont('times','bold');
+      doc.text(it.nomor, 63, 74);
     }
+
     doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
     doc.text('TPA: '+state.tpa.nama+' — '+state.tpa.kelurahan, 8, 98);
   });
