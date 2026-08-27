@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Pendaftaran FASI — Festival Anak Sholeh Indonesia</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<style>
+  :root{
+    --red:#C41E24;
+    --red-dark:#8A0F14;
+    --red-deep:#5C0A0C;
+    --gold:#D4AF37;
+    --cream:#FFF8EE;
+    --ink:#2B1414;
+    --success:#1F8A45;
+    --success-bg:#E9F7EF;
+    --danger:#B3261E;
+    --danger-bg:#FBEAEA;
+    --font-display: Georgia, 'Times New Roman', serif;
+    --font-body: 'Segoe UI', Tahoma, Arial, sans-serif;
+    --radius: 14px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    font-family:var(--font-body);
+    color:var(--ink);
+    background:
+      radial-gradient(circle at 10% 10%, rgba(212,175,55,0.10), transparent 40%),
+      radial-gradient(circle at 90% 90%, rgba(212,175,55,0.10), transparent 40%),
+      linear-gradient(160deg, var(--red-deep) 0%, var(--red) 45%, var(--red-dark) 100%);
+    min-height:100vh;
+    background-attachment:fixed;
+  }
+  .pattern-overlay{
+    position:fixed; inset:0; pointer-events:none; opacity:.10; z-index:0;
+    background-image:
+      repeating-linear-gradient(45deg, var(--gold) 0 2px, transparent 2px 40px),
+      repeating-linear-gradient(-45deg, var(--gold) 0 2px, transparent 2px 40px);
+  }
+  .wrap{position:relative; z-index:1; max-width:960px; margin:0 auto; padding:24px 16px 64px;}
+  header.top{
+    text-align:center; color:#fff; padding:22px 10px 8px;
+  }
+  header.top .eyebrow{
+    letter-spacing:.28em; font-size:11px; color:var(--gold); text-transform:uppercase; font-weight:600;
+  }
+  header.top h1{
+    font-family:var(--font-display); font-size:clamp(28px,5vw,42px); margin:6px 0 2px; letter-spacing:.02em;
+    text-shadow:0 2px 10px rgba(0,0,0,.25);
+  }
+  header.top p{margin:0; opacity:.9; font-size:14px;}
+
+  .stepper{display:flex; justify-content:center; gap:6px; margin:20px 0 26px; flex-wrap:wrap;}
+  .step-dot{
+    display:flex; align-items:center; gap:8px; padding:7px 12px 7px 8px; border-radius:999px;
+    background:rgba(255,255,255,.12); color:#fff; font-size:12.5px; font-weight:600; opacity:.55;
+    border:1px solid rgba(255,255,255,.25);
+  }
+  .step-dot.active{opacity:1; background:rgba(255,255,255,.95); color:var(--red-dark); border-color:transparent;}
+  .step-dot.done{opacity:.9; background:var(--gold); color:var(--red-deep); border-color:transparent;}
+  .step-dot .n{
+    width:18px;height:18px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+    background:rgba(255,255,255,.25); font-size:11px;
+  }
+  .step-dot.active .n{background:var(--red); color:#fff;}
+
+  .card{
+    background:#fff; border-radius:var(--radius); padding:28px 26px; box-shadow:0 18px 40px rgba(0,0,0,.28);
+    border-top:6px solid var(--gold);
+  }
+  .card h2{font-family:var(--font-display); font-size:24px; margin:0 0 4px; color:var(--red-dark);}
+  .card .sub{color:#6b5a5a; font-size:13.5px; margin:0 0 20px;}
+
+  label{display:block; font-size:13px; font-weight:600; margin:14px 0 6px; color:#4a2f2f;}
+  input[type=text], input[type=date], select, textarea{
+    width:100%; padding:11px 12px; border:1.5px solid #e6d9d9; border-radius:10px; font-size:14.5px;
+    font-family:var(--font-body); background:#fffdfb;
+  }
+  input:focus, select:focus, textarea:focus{outline:none; border-color:var(--red); box-shadow:0 0 0 3px rgba(196,30,36,.12);}
+  .file-input{
+    border:1.5px dashed #d9b7b7; border-radius:10px; padding:14px; text-align:center; font-size:13px; color:#8a6b6b; cursor:pointer;
+    background:#fffaf7;
+  }
+  .file-input.has-file{border-style:solid; border-color:var(--success); color:var(--success); background:var(--success-bg);}
+  .radio-row{display:flex; gap:10px; margin-top:6px;}
+  .radio-chip{
+    flex:1; text-align:center; padding:10px; border:1.5px solid #e6d9d9; border-radius:10px; cursor:pointer; font-size:14px; font-weight:600; color:#6b5a5a;
+  }
+  .radio-chip.selected{border-color:var(--red); background:var(--red); color:#fff;}
+  .badge-fixed{display:inline-block; margin-top:8px; padding:6px 12px; border-radius:8px; background:#fdf1d8; color:#8a6b0f; font-size:12.5px; font-weight:600;}
+
+  .age-box{margin-top:10px; padding:10px 12px; border-radius:10px; font-size:13px; font-weight:600;}
+  .age-box.ok{background:var(--success-bg); color:var(--success);}
+  .age-box.warn{background:var(--danger-bg); color:var(--danger);}
+  .age-box.idle{background:#f4f1ee; color:#8a7a7a;}
+
+  .btn{
+    display:inline-flex; align-items:center; justify-content:center; gap:8px; padding:13px 22px; border-radius:10px;
+    font-weight:700; font-size:14.5px; cursor:pointer; border:none; font-family:var(--font-body);
+  }
+  .btn-primary{background:var(--red); color:#fff;}
+  .btn-primary:hover{background:var(--red-dark);}
+  .btn-primary:disabled{background:#d9b7b7; cursor:not-allowed;}
+  .btn-gold{background:var(--gold); color:var(--red-deep);}
+  .btn-ghost{background:#f4ecec; color:var(--red-dark);}
+  .btn-outline{background:#fff; border:1.5px solid var(--red); color:var(--red);}
+  .btn-danger-text{background:transparent; color:var(--danger); font-size:12.5px; padding:6px 10px; font-weight:700;}
+  .btn-row{display:flex; justify-content:space-between; margin-top:24px; gap:10px; flex-wrap:wrap;}
+
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:0 16px;}
+  @media (max-width:600px){.grid2{grid-template-columns:1fr;}}
+
+  table{width:100%; border-collapse:collapse; margin-top:8px; font-size:13.5px;}
+  th,td{text-align:left; padding:10px 8px; border-bottom:1px solid #f0e6e6;}
+  th{color:#8a6b6b; font-size:11.5px; text-transform:uppercase; letter-spacing:.04em;}
+  tr:last-child td{border-bottom:none;}
+  .pill{display:inline-block; padding:3px 9px; border-radius:999px; font-size:11.5px; font-weight:700;}
+  .pill-ok{background:var(--success-bg); color:var(--success);}
+  .pill-warn{background:var(--danger-bg); color:var(--danger);}
+  .pill-cat{background:#f4ecec; color:var(--red-dark);}
+
+  .empty{text-align:center; padding:34px 10px; color:#a58f8f;}
+  .empty .big{font-size:34px; margin-bottom:8px;}
+
+  .add-choice{display:flex; gap:14px; margin-top:6px; flex-wrap:wrap;}
+  .add-choice .opt{
+    flex:1; min-width:210px; border:1.5px solid #f0dede; border-radius:12px; padding:18px; cursor:pointer; text-align:left;
+  }
+  .add-choice .opt:hover{border-color:var(--red);}
+  .add-choice .opt h3{margin:0 0 4px; font-size:15.5px; color:var(--red-dark);}
+  .add-choice .opt p{margin:0; font-size:12.5px; color:#8a6b6b;}
+
+  .modal-back{position:fixed; inset:0; background:rgba(30,10,10,.55); display:flex; align-items:flex-start; justify-content:center; padding:26px 12px; overflow-y:auto; z-index:50;}
+  .modal{background:#fff; border-radius:16px; padding:26px; max-width:560px; width:100%; box-shadow:0 20px 50px rgba(0,0,0,.4);}
+  .modal h3{font-family:var(--font-display); color:var(--red-dark); margin:0 0 14px; font-size:20px;}
+  .member-row{border:1px solid #f0dede; border-radius:10px; padding:12px; margin-top:10px; position:relative;}
+  .member-row .rm{position:absolute; top:8px; right:10px; font-size:12px; color:var(--danger); cursor:pointer; font-weight:700; background:none; border:none;}
+
+  .totalbar{display:flex; justify-content:space-between; align-items:center; padding:16px 18px; background:linear-gradient(90deg,#fdf3e3,#fff); border-radius:12px; margin-top:16px; border:1px solid #f0e0b8;}
+  .totalbar .amt{font-family:var(--font-display); font-size:26px; color:var(--red-dark); font-weight:700;}
+
+  .pay-box{background:#fff8ee; border:1.5px dashed var(--gold); border-radius:12px; padding:18px; margin-top:6px;}
+  .pay-box .rek{font-family:var(--font-display); font-size:20px; color:var(--red-dark); letter-spacing:.03em;}
+
+  .banner-demo{background:#fff3cd; color:#7a5c00; padding:9px 14px; border-radius:10px; font-size:12.5px; margin-bottom:16px; border:1px solid #f0d78a;}
+
+  .cocard-preview{border-radius:12px; overflow:hidden; border:3px solid var(--gold); margin-top:16px; box-shadow:0 10px 25px rgba(0,0,0,.15);}
+  .cocard-preview .cc-red{background:linear-gradient(145deg,var(--red),var(--red-dark)); padding:20px; color:#fff; position:relative; min-height:150px;}
+  .cocard-preview .cc-title{font-family:var(--font-display); font-size:26px; letter-spacing:.05em; margin:0 0 10px;}
+  .cocard-preview .cc-field{background:rgba(255,255,255,.95); color:var(--ink); border-radius:8px; padding:6px 10px; margin-bottom:8px; font-size:12.5px; max-width:70%;}
+  .cocard-preview .cc-field b{display:block; font-size:13.5px;}
+  .cocard-preview .cc-num{position:absolute; right:18px; bottom:14px; font-size:11px; color:var(--gold); letter-spacing:.1em;}
+
+  footer.note{text-align:center; color:rgba(255,255,255,.75); font-size:12px; margin-top:30px; line-height:1.6;}
+  .small-link{color:var(--gold); text-decoration:underline; cursor:pointer; font-size:12.5px;}
+</style>
+</head>
+<body>
+<div class="pattern-overlay"></div>
+<div class="wrap">
+  <header class="top">
+    <div class="eyebrow">Badan Koordinasi TPA/TQA</div>
+    <h1>Pendaftaran Peserta FASI</h1>
+    <p>Festival Anak Sholeh Indonesia — TKA · TPA · TQA</p>
+  </header>
+
+  <div class="stepper" id="stepper"></div>
+  <div id="app"></div>
+
+  <footer class="note">
+    Sistem pendaftaran online — data tersimpan otomatis ke Google Spreadsheet panitia.<br>
+    Butuh bantuan? Hubungi panitia FASI di kelurahan masing-masing.
+  </footer>
+</div>
+
+<script>
+/* ============ KONFIGURASI ============ */
+// Setelah men-deploy Code.gs sebagai Web App, tempel URL Web App Anda di sini.
+// Selama masih bertuliskan placeholder di bawah, aplikasi berjalan dalam MODE DEMO
+// (data tidak benar-benar terkirim ke Google Sheets, hanya disimpan sementara di memori).
+const WEBAPP_URL = "https://script.google.com/macros/s/AKfycbyLwt67iwG0i492ccWhhLy1HuW5rvJ9TrCpP6KRK7Kz78cGRKzxLz1bIAUkTKq5oH8/exec";
+const DEMO_MODE = WEBAPP_URL.indexOf("GANTI_DENGAN") !== -1;
+
+const FEE_INDIVIDU = 15000;
+const FEE_KELOMPOK = 35000;
+const BANK_INFO = { bank: "BRI", norek: "040901046382503", atasNama: "Nur Sarah Khoiratunnisaa" };
+const KELURAHAN_OPTIONS = ["KRICAK","KARANGWARU","TEGALREJO","BENER"];
+
+// Rentang tanggal lahir per kategori (hasil turunan dari batas minimal & maksimal usia yang diberikan panitia)
+const AGE_RANGE = {
+  TKA: { min: "2020-07-01", max: "2023-07-01", label: "4 – 7 tahun" },
+  TPA: { min: "2015-07-01", max: "2020-07-02", label: "7 – 12 tahun" },
+  TQA: { min: "2012-07-01", max: "2015-07-02", label: "12 – 15 tahun" }
+};
+
+// Cabang lomba per kategori. tipe: 'individu' | 'kelompok'. klasifikasiTetap dipakai bila hanya 1 gender diperbolehkan.
+const LOMBA = {
+  TKA: [
+    { nama:"Tartil Al-Qur'an", tipe:"individu" },
+    { nama:"Adzan dan Iqomah", tipe:"kelompok" },
+    { nama:"Peragaan Shalat", tipe:"individu" },
+    { nama:"Ikrar & Puitisasi Tarjamah Al-Qur'an", tipe:"individu" },
+    { nama:"Nasyid Islami", tipe:"kelompok" },
+    { nama:"Cerdas Cermat Al-Qur'an", tipe:"kelompok" },
+    { nama:"Mewarnai Gambar", tipe:"individu" },
+    { nama:"Ceramah Agama Islam Bhs. Indonesia", tipe:"individu" }
+  ],
+  TPA: [
+    { nama:"Tartil Al-Qur'an", tipe:"individu" },
+    { nama:"Adzan dan Iqomah", tipe:"individu", klasifikasiTetap:"Putra" },
+    { nama:"Ikrar & Puitisasi Tarjamah Al-Qur'an", tipe:"individu" },
+    { nama:"Nasyid Islami", tipe:"kelompok" },
+    { nama:"Cerdas Cermat Al-Qur'an", tipe:"kelompok" },
+    { nama:"Menggambar", tipe:"individu" },
+    { nama:"Ceramah Agama Islam Bhs. Indonesia", tipe:"individu" }
+  ],
+  TQA: [
+    { nama:"Tilawah Al-Qur'an", tipe:"individu" },
+    { nama:"Tahfidz Juz 'Amma", tipe:"individu" },
+    { nama:"Syarhil Qur'an", tipe:"kelompok" },
+    { nama:"Cerdas Cermat Al-Qur'an", tipe:"kelompok" },
+    { nama:"Kisah Islami", tipe:"individu" },
+    { nama:"Kaligrafi", tipe:"individu" },
+    { nama:"Ceramah Agama Islam Bhs. Indonesia", tipe:"individu" }
+  ]
+};
+
+/* ============ STATE ============ */
+let state = {
+  step: 0,
+  tpa: { id: null, nama: "", kelurahan: "" },
+  peserta: [],   // {rowId, nomor, nama, kategori, cabang, klasifikasi, tanggalLahir, statusUsia, fileName, fileData}
+  kelompok: [],  // {rowId, nomor, namaKelompok, kategori, cabang, anggota:[{nama,tanggalLahir,statusUsia,fileName,fileData}]}
+  pembayaran: { fileName:null, fileData:null, terkirim:false },
+  modal: null    // 'individu' | 'kelompok' | null
+};
+
+/* ============ UTIL ============ */
+function el(html){ const d=document.createElement('div'); d.innerHTML=html.trim(); return d.firstChild; }
+function money(n){ return "Rp" + n.toLocaleString('id-ID'); }
+
+function hitungUsiaText(tglStr){
+  if(!tglStr) return "-";
+  const lahir = new Date(tglStr+"T00:00:00");
+  const now = new Date();
+  let th = now.getFullYear()-lahir.getFullYear();
+  let bl = now.getMonth()-lahir.getMonth();
+  if (now.getDate() < lahir.getDate()) bl--;
+  if (bl<0){ th--; bl+=12; }
+  return th + " th " + bl + " bln";
+}
+
+function cekEligibilitas(kategori, tglStr){
+  if(!tglStr) return null;
+  const range = AGE_RANGE[kategori];
+  const t = tglStr; // format YYYY-MM-DD, bisa dibandingkan sebagai string ISO
+  const sesuai = t >= range.min && t <= range.max;
+  return { sesuai, label: sesuai ? "Usia sesuai kategori "+kategori : "Usia TIDAK sesuai kategori "+kategori+" ("+range.label+") — tetap bisa didaftarkan, namun tidak berhak juara" };
+}
+
+function fileToBase64(file){
+  return new Promise((resolve,reject)=>{
+    const r = new FileReader();
+    r.onload = ()=> resolve(r.result);
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+async function callApi(action, payload){
+  if (DEMO_MODE){
+    await new Promise(r=>setTimeout(r,350));
+    return { success:true, data: demoResponse(action, payload) };
+  }
+  let res;
+  try{
+    res = await fetch(WEBAPP_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action, ...payload })
+    });
+  }catch(networkErr){
+    throw new Error("Tidak bisa menghubungi server (jaringan terputus atau URL Web App salah). Detail: "+networkErr.message);
+  }
+  const raw = await res.text();
+  try{
+    return JSON.parse(raw);
+  }catch(parseErr){
+    console.error("Respons server bukan JSON (status "+res.status+"). Isi respons:\n"+raw.slice(0,800));
+    let hint = "Server Apps Script tidak mengembalikan data yang valid (status HTTP "+res.status+").";
+    if (raw.indexOf("accounts.google.com")!==-1 || raw.indexOf("ServiceLogin")!==-1){
+      hint += " Sepertinya deployment meminta login Google — cek pengaturan Deploy: \"Who has access\" harus \"Anyone\".";
+    } else if (raw.indexOf("Authorization")!==-1 || raw.indexOf("authorize")!==-1){
+      hint += " Sepertinya script perlu otorisasi ulang di Apps Script.";
+    } else {
+      hint += " Coba buat versi deployment baru (Deploy > Manage deployments > Edit > New version), lalu coba lagi. Detail teknis ada di Console browser (tekan F12).";
+    }
+    throw new Error(hint);
+  }
+}
+
+let demoCounter = { TKA:0, TPA:0, TQA:0 };
+function demoResponse(action, payload){
+  if (action==="addTPA") return { tpaId: "DEMO-TPA-"+Date.now() };
+  if (action==="addPeserta" || action==="addKelompok"){
+    demoCounter[payload.kategori] = (demoCounter[payload.kategori]||0)+1;
+    const num = String(demoCounter[payload.kategori]).padStart(4,'0');
+    return { nomor: payload.kategori+"-"+num, rowIndex: demoCounter[payload.kategori] };
+  }
+  return {};
+}
+
+/* ============ RENDER: STEPPER ============ */
+const STEPS = ["Profil TPA","Peserta","Rekapitulasi","Pembayaran","Selesai"];
+function renderStepper(){
+  const s = document.getElementById('stepper');
+  s.innerHTML = "";
+  STEPS.forEach((label,i)=>{
+    const cls = i===state.step ? "active" : (i<state.step ? "done":"");
+    s.appendChild(el(`<div class="step-dot ${cls}"><span class="n">${i<state.step?'✓':(i+1)}</span>${label}</div>`));
+  });
+}
+
+/* ============ RENDER: MAIN ============ */
+function render(){
+  renderStepper();
+  const app = document.getElementById('app');
+  app.innerHTML = "";
+  if (state.step===0) app.appendChild(renderStep0());
+  if (state.step===1) app.appendChild(renderStep1());
+  if (state.step===2) app.appendChild(renderStep3());
+  if (state.step===3) app.appendChild(renderStep4());
+  if (state.step===4) app.appendChild(renderStepEnd());
+  if (state.modal) app.appendChild(renderModal());
+}
+
+/* ---- STEP 0: Profil TPA ---- */
+function renderStep0(){
+  const c = el(`<div class="card">
+    ${DEMO_MODE?'<div class="banner-demo">⚠️ Mode demo: WEBAPP_URL belum diisi, sehingga data belum tersambung ke Google Sheets sungguhan. Panitia dapat mengisi konfigurasi di bagian atas kode HTML ini.</div>':''}
+    ${!DEMO_MODE?'<div style="margin-bottom:16px;"><span class="small-link" id="btn-tes-koneksi" style="color:#8a6b6b;">🔌 Tes koneksi ke backend Google Sheets</span><div id="tes-koneksi-hasil"></div></div>':''}
+    <h2>Profil TPA / Utusan</h2>
+    <p class="sub">Isi data unit TPA yang mendaftarkan peserta ke FASI.</p>
+    <label>Nama TPA</label>
+    <input type="text" id="f-nama-tpa" placeholder="Contoh: TPA Al-Ikhlas" value="${state.tpa.nama}">
+    <label>Kelurahan Asal TPA</label>
+    <select id="f-kelurahan">
+      <option value="">-- Pilih Kelurahan --</option>
+      ${KELURAHAN_OPTIONS.map(k=>`<option value="${k}" ${state.tpa.kelurahan===k?'selected':''}>${k}</option>`).join('')}
+    </select>
+    <div class="btn-row">
+      <span></span>
+      <button class="btn btn-primary" id="btn-lanjut-tpa">Lanjut ke Data Peserta →</button>
+    </div>
+  </div>`);
+  const tesBtn = c.querySelector('#btn-tes-koneksi');
+  if (tesBtn) tesBtn.onclick = async ()=>{
+    const hasil = c.querySelector('#tes-koneksi-hasil');
+    hasil.innerHTML = '<div class="age-box idle">Menghubungi server...</div>';
+    try{
+      const res = await callApi('ping', {});
+      if (res.success) hasil.innerHTML = '<div class="age-box ok">✓ Terhubung! Server menjawab: '+(res.data.pong?'pong':'ok')+' pada '+res.data.time+'</div>';
+      else hasil.innerHTML = '<div class="age-box warn">⚠️ '+(res.error||'Gagal terhubung')+'</div>';
+    }catch(err){
+      hasil.innerHTML = '<div class="age-box warn">⚠️ '+err.message+'</div>';
+    }
+  };
+  c.querySelector('#btn-lanjut-tpa').onclick = async ()=>{
+    const nama = c.querySelector('#f-nama-tpa').value.trim();
+    const kel = c.querySelector('#f-kelurahan').value;
+    if(!nama || !kel){ alert('Mohon lengkapi nama TPA dan kelurahan.'); return; }
+    const btn = c.querySelector('#btn-lanjut-tpa'); btn.disabled=true; btn.textContent='Menyimpan...';
+    try{
+      const res = await callApi('addTPA', { namaTPA: nama, kelurahan: kel });
+      if(!res.success) throw new Error(res.error||'Gagal menyimpan profil TPA');
+      state.tpa = { id: res.data.tpaId, nama, kelurahan: kel };
+      state.step = 1;
+      render();
+    }catch(err){ alert('Gagal: '+err.message); btn.disabled=false; btn.textContent='Lanjut ke Data Peserta →'; }
+  };
+  return c;
+}
+
+/* ---- STEP 1: Daftar Peserta ---- */
+function renderPesertaStep(){
+  const total = state.peserta.length*FEE_INDIVIDU + state.kelompok.length*FEE_KELOMPOK;
+  const rows = [];
+  state.peserta.forEach((p,i)=> rows.push(pesertaRowHtml(p,i)));
+  state.kelompok.forEach((k,i)=> rows.push(kelompokRowHtml(k,i)));
+
+  const c = el(`<div class="card">
+    <h2>Utusan: ${state.tpa.nama}</h2>
+    <p class="sub">Kelurahan ${state.tpa.kelurahan} — Tambahkan peserta perorangan atau tim kelompok untuk setiap cabang lomba.</p>
+
+    <div class="add-choice">
+      <div class="opt" id="opt-individu"><h3>+ Tambah Peserta Individu</h3><p>Untuk cabang lomba berklasifikasi Putra / Putri.</p></div>
+      <div class="opt" id="opt-kelompok"><h3>+ Tambah Kelompok</h3><p>Untuk cabang lomba Group / Campuran.</p></div>
+    </div>
+
+    <div style="margin-top:22px;">
+      ${rows.length ? `<table><thead><tr><th>No. Peserta</th><th>Nama</th><th>Kategori</th><th>Cabang Lomba</th><th>Ket.</th><th>Usia</th><th>Biaya</th><th></th></tr></thead><tbody>${rows.join('')}</tbody></table>`
+      : `<div class="empty"><div class="big">🗂️</div>Belum ada peserta yang ditambahkan.</div>`}
+    </div>
+
+    ${rows.length ? `<div class="totalbar"><div>Total sementara (${state.peserta.length} individu, ${state.kelompok.length} kelompok)</div><div class="amt">${money(total)}</div></div>`:''}
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-back0">← Kembali</button>
+      <button class="btn btn-primary" id="btn-lanjut-rekap" ${rows.length?'':'disabled'}>Lanjut ke Rekapitulasi →</button>
+    </div>
+  </div>`);
+
+  c.querySelector('#opt-individu').onclick = ()=>{ state.modal='individu'; render(); };
+  c.querySelector('#opt-kelompok').onclick = ()=>{ state.modal='kelompok'; render(); };
+  c.querySelector('#btn-back0').onclick = ()=>{ state.step=0; render(); };
+  const lanjut = c.querySelector('#btn-lanjut-rekap');
+  if(lanjut) lanjut.onclick = ()=>{ state.step=2; render(); };
+
+  c.querySelectorAll('[data-del-p]').forEach(b=> b.onclick=async(e)=>{
+    const idx = +e.target.dataset.delP;
+    await callApi('deletePeserta', { rowIndex: state.peserta[idx].rowIndex });
+    state.peserta.splice(idx,1); render();
+  });
+  c.querySelectorAll('[data-del-k]').forEach(b=> b.onclick=async(e)=>{
+    const idx = +e.target.dataset.delK;
+    await callApi('deleteKelompok', { rowIndex: state.kelompok[idx].rowIndex });
+    state.kelompok.splice(idx,1); render();
+  });
+  return c;
+}
+
+function pesertaRowHtml(p,i){
+  const pillCls = p.statusUsia.sesuai ? 'pill-ok':'pill-warn';
+  const pillTxt = p.statusUsia.sesuai ? 'Sesuai':'Tidak sesuai';
+  return `<tr>
+    <td><b>${p.nomor}</b></td>
+    <td>${p.nama}</td>
+    <td><span class="pill pill-cat">${p.kategori}</span></td>
+    <td>${p.cabang}</td>
+    <td>${p.klasifikasi}</td>
+    <td><span class="pill ${pillCls}">${pillTxt}</span></td>
+    <td>${money(FEE_INDIVIDU)}</td>
+    <td><button class="btn-danger-text" data-del-p="${i}">Hapus</button></td>
+  </tr>`;
+}
+function kelompokRowHtml(k,i){
+  const semuaOk = k.anggota.every(a=>a.statusUsia.sesuai);
+  const pillCls = semuaOk ? 'pill-ok':'pill-warn';
+  const pillTxt = semuaOk ? 'Sesuai':'Ada anggota tidak sesuai';
+  return `<tr>
+    <td><b>${k.nomor}</b></td>
+    <td>${k.namaKelompok} <span style="color:#a58f8f;font-size:11.5px;">(${k.anggota.length} anggota)</span></td>
+    <td><span class="pill pill-cat">${k.kategori}</span></td>
+    <td>${k.cabang}</td>
+    <td>Kelompok</td>
+    <td><span class="pill ${pillCls}">${pillTxt}</span></td>
+    <td>${money(FEE_KELOMPOK)}</td>
+    <td><button class="btn-danger-text" data-del-k="${i}">Hapus</button></td>
+  </tr>`;
+}
+
+/* ---- MODAL: Tambah Individu / Kelompok ---- */
+function renderModal(){
+  const back = el(`<div class="modal-back"><div class="modal" id="modal-inner"></div></div>`);
+  back.onclick = (e)=>{ if(e.target===back){ state.modal=null; render(); } };
+  const inner = back.querySelector('#modal-inner');
+  inner.onclick = (e)=> e.stopPropagation();
+  if (state.modal==='individu') inner.appendChild(renderFormIndividu());
+  if (state.modal==='kelompok') inner.appendChild(renderFormKelompok());
+  return back;
+}
+
+function cabangOptions(kategori, tipe){
+  return (LOMBA[kategori]||[]).filter(l=>l.tipe===tipe);
+}
+
+function renderFormIndividu(){
+  let form = { kategori:'', cabang:'', klasifikasi:'', nama:'', tgl:'', fileName:null, fileData:null };
+  const wrap = el(`<div>
+    <h3>Tambah Peserta Individu</h3>
+    <label>Kategori</label>
+    <select id="m-kat"><option value="">-- Pilih --</option><option value="TKA">TKA (4–7 th)</option><option value="TPA">TPA (7–12 th)</option><option value="TQA">TQA (12–15 th)</option></select>
+    <label>Cabang Lomba</label>
+    <select id="m-cabang" disabled><option value="">-- Pilih kategori dahulu --</option></select>
+    <div id="m-klasifikasi-area"></div>
+    <label>Nama Lengkap Peserta</label>
+    <input type="text" id="m-nama" placeholder="Nama sesuai akta/KK">
+    <div class="grid2">
+      <div>
+        <label>Tanggal Lahir</label>
+        <input type="date" id="m-tgl">
+      </div>
+      <div>
+        <label>Usia Terhitung</label>
+        <input type="text" id="m-usia" disabled placeholder="-">
+      </div>
+    </div>
+    <div id="m-age-box"></div>
+    <label>Upload Bukti Kelahiran (Akta / KK / KIA — gambar atau PDF)</label>
+    <div class="file-input" id="m-file-box">Klik untuk pilih file (JPG, PNG, atau PDF)</div>
+    <input type="file" id="m-file" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" style="display:none">
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="m-cancel">Batal</button>
+      <button class="btn btn-primary" id="m-save">Simpan Peserta</button>
+    </div>
+  </div>`);
+
+  wrap.querySelector('#m-kat').onchange = (e)=>{
+    form.kategori = e.target.value;
+    const sel = wrap.querySelector('#m-cabang');
+    const opts = cabangOptions(form.kategori,'individu');
+    sel.disabled = false;
+    sel.innerHTML = `<option value="">-- Pilih Cabang Lomba --</option>` + opts.map(o=>`<option value="${o.nama}">${o.nama}</option>`).join('');
+    updateAgeBox();
+  };
+  wrap.querySelector('#m-cabang').onchange = (e)=>{
+    form.cabang = e.target.value;
+    const lombaDef = cabangOptions(form.kategori,'individu').find(o=>o.nama===form.cabang);
+    const area = wrap.querySelector('#m-klasifikasi-area');
+    if (lombaDef && lombaDef.klasifikasiTetap){
+      form.klasifikasi = lombaDef.klasifikasiTetap;
+      area.innerHTML = `<span class="badge-fixed">Cabang ini khusus: ${lombaDef.klasifikasiTetap}</span>`;
+    } else {
+      form.klasifikasi = '';
+      area.innerHTML = `<label>Klasifikasi</label><div class="radio-row" id="m-klas-row">
+        <div class="radio-chip" data-v="Putra">Putra</div>
+        <div class="radio-chip" data-v="Putri">Putri</div>
+      </div>`;
+      area.querySelectorAll('.radio-chip').forEach(chip=>{
+        chip.onclick = ()=>{
+          area.querySelectorAll('.radio-chip').forEach(c2=>c2.classList.remove('selected'));
+          chip.classList.add('selected'); form.klasifikasi = chip.dataset.v;
+        };
+      });
+    }
+  };
+  wrap.querySelector('#m-nama').oninput = (e)=> form.nama = e.target.value;
+  wrap.querySelector('#m-tgl').onchange = (e)=>{ form.tgl = e.target.value; updateAgeBox(); };
+  function updateAgeBox(){
+    const box = wrap.querySelector('#m-age-box');
+    const usiaField = wrap.querySelector('#m-usia');
+    if(!form.tgl || !form.kategori){ box.innerHTML=''; usiaField.value=''; return; }
+    usiaField.value = hitungUsiaText(form.tgl);
+    const cek = cekEligibilitas(form.kategori, form.tgl);
+    box.innerHTML = `<div class="age-box ${cek.sesuai?'ok':'warn'}">${cek.sesuai?'✓':'⚠️'} ${cek.label}</div>`;
+  }
+  const fileBox = wrap.querySelector('#m-file-box');
+  const fileInput = wrap.querySelector('#m-file');
+  fileBox.onclick = ()=> fileInput.click();
+  fileInput.onchange = async ()=>{
+    const f = fileInput.files[0]; if(!f) return;
+    form.fileName = f.name; form.fileData = await fileToBase64(f);
+    fileBox.textContent = "✓ " + f.name; fileBox.classList.add('has-file');
+  };
+  wrap.querySelector('#m-cancel').onclick = ()=>{ state.modal=null; render(); };
+  wrap.querySelector('#m-save').onclick = async ()=>{
+    if(!form.kategori||!form.cabang||!form.klasifikasi||!form.nama.trim()||!form.tgl){ alert('Mohon lengkapi seluruh isian.'); return; }
+    if(!form.fileData){ if(!confirm('Bukti kelahiran belum diunggah. Lanjutkan tanpa file? (dapat menyusul kemudian ke panitia)')) return; }
+    const btn = wrap.querySelector('#m-save'); btn.disabled=true; btn.textContent='Menyimpan...';
+    const statusUsia = cekEligibilitas(form.kategori, form.tgl);
+    try{
+      const res = await callApi('addPeserta', {
+        tpaId: state.tpa.id, namaTPA: state.tpa.nama, kelurahan: state.tpa.kelurahan,
+        kategori: form.kategori, cabang: form.cabang, klasifikasi: form.klasifikasi,
+        nama: form.nama.trim(), tanggalLahir: form.tgl, statusUsia: statusUsia.sesuai ? 'Sesuai':'Tidak Sesuai',
+        fileName: form.fileName, fileData: form.fileData, biaya: FEE_INDIVIDU
+      });
+      if(!res.success) throw new Error(res.error||'Gagal menyimpan peserta');
+      state.peserta.push({
+        rowIndex: res.data.rowIndex, nomor: res.data.nomor, nama: form.nama.trim(), kategori: form.kategori,
+        cabang: form.cabang, klasifikasi: form.klasifikasi, tanggalLahir: form.tgl, statusUsia,
+        fileName: form.fileName, fileData: form.fileData
+      });
+      state.modal = null; render();
+    }catch(err){ alert('Gagal: '+err.message); btn.disabled=false; btn.textContent='Simpan Peserta'; }
+  };
+  return wrap;
+}
+
+function renderFormKelompok(){
+  let form = { kategori:'', cabang:'', namaKelompok:'', anggota: [] };
+  function addAnggota(){ form.anggota.push({ nama:'', tgl:'', fileName:null, fileData:null }); renderAnggota(); }
+  function renderAnggota(){
+    const box = wrap.querySelector('#m-anggota-list');
+    box.innerHTML = '';
+    form.anggota.forEach((a,idx)=>{
+      const row = el(`<div class="member-row">
+        <button class="rm" data-i="${idx}">✕ Hapus</button>
+        <label>Nama Anggota ${idx+1}</label>
+        <input type="text" data-f="nama" data-i="${idx}" value="${a.nama}" placeholder="Nama anggota">
+        <div class="grid2">
+          <div><label>Tanggal Lahir</label><input type="date" data-f="tgl" data-i="${idx}" value="${a.tgl}"></div>
+          <div><label>Usia</label><input type="text" disabled value="${a.tgl?hitungUsiaText(a.tgl):''}"></div>
+        </div>
+        <div class="age-box-slot"></div>
+        <label style="margin-top:8px;">Bukti Kelahiran</label>
+        <div class="file-input mini" data-ff="${idx}">${a.fileName?('✓ '+a.fileName):'Klik untuk pilih file'}</div>
+        <input type="file" data-fi="${idx}" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" style="display:none">
+      </div>`);
+      if (a.tgl && form.kategori){
+        const cek = cekEligibilitas(form.kategori, a.tgl);
+        row.querySelector('.age-box-slot').outerHTML = `<div class="age-box ${cek.sesuai?'ok':'warn'}">${cek.sesuai?'✓':'⚠️'} ${cek.label}</div>`;
+      }
+      box.appendChild(row);
+    });
+    box.querySelectorAll('.rm').forEach(b=> b.onclick=()=>{ form.anggota.splice(+b.dataset.i,1); renderAnggota(); });
+    box.querySelectorAll('input[data-f]').forEach(inp=> inp.onchange = inp.oninput = (e)=>{
+      const i=+e.target.dataset.i, f=e.target.dataset.f;
+      form.anggota[i][f] = e.target.value;
+      if(f==='tgl') renderAnggota();
+    });
+    box.querySelectorAll('[data-ff]').forEach(fb=>{
+      const idx = +fb.dataset.ff;
+      fb.onclick = ()=> box.querySelector(`[data-fi="${idx}"]`).click();
+    });
+    box.querySelectorAll('[data-fi]').forEach(fi=>{
+      fi.onchange = async ()=>{
+        const idx = +fi.dataset.fi; const f = fi.files[0]; if(!f) return;
+        form.anggota[idx].fileName = f.name; form.anggota[idx].fileData = await fileToBase64(f);
+        renderAnggota();
+      };
+    });
+  }
+
+  const wrap = el(`<div>
+    <h3>Tambah Kelompok / Group</h3>
+    <label>Kategori</label>
+    <select id="m-kat"><option value="">-- Pilih --</option><option value="TKA">TKA (4–7 th)</option><option value="TPA">TPA (7–12 th)</option><option value="TQA">TQA (12–15 th)</option></select>
+    <label>Cabang Lomba (Group/Campuran)</label>
+    <select id="m-cabang" disabled><option value="">-- Pilih kategori dahulu --</option></select>
+    <label>Nama Kelompok / Tim</label>
+    <input type="text" id="m-nama-kel" placeholder="Contoh: Tim Nasyid Al-Ikhlas">
+    <label>Anggota Kelompok</label>
+    <div id="m-anggota-list"></div>
+    <button class="btn btn-outline" id="m-add-anggota" style="margin-top:10px;">+ Tambah Anggota</button>
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="m-cancel">Batal</button>
+      <button class="btn btn-primary" id="m-save">Simpan Kelompok</button>
+    </div>
+  </div>`);
+
+  wrap.querySelector('#m-kat').onchange = (e)=>{
+    form.kategori = e.target.value;
+    const sel = wrap.querySelector('#m-cabang');
+    const opts = cabangOptions(form.kategori,'kelompok');
+    sel.disabled = false;
+    sel.innerHTML = `<option value="">-- Pilih Cabang Lomba --</option>` + opts.map(o=>`<option value="${o.nama}">${o.nama}</option>`).join('');
+    renderAnggota();
+  };
+  wrap.querySelector('#m-cabang').onchange = (e)=> form.cabang = e.target.value;
+  wrap.querySelector('#m-nama-kel').oninput = (e)=> form.namaKelompok = e.target.value;
+  wrap.querySelector('#m-add-anggota').onclick = addAnggota;
+  wrap.querySelector('#m-cancel').onclick = ()=>{ state.modal=null; render(); };
+  wrap.querySelector('#m-save').onclick = async ()=>{
+    if(!form.kategori||!form.cabang||!form.namaKelompok.trim()||form.anggota.length===0){ alert('Mohon lengkapi kategori, cabang lomba, nama kelompok, dan minimal 1 anggota.'); return; }
+    for(const a of form.anggota){ if(!a.nama.trim()||!a.tgl){ alert('Lengkapi nama dan tanggal lahir setiap anggota.'); return; } }
+    const btn = wrap.querySelector('#m-save'); btn.disabled=true; btn.textContent='Menyimpan...';
+    const anggotaFinal = form.anggota.map(a=>({ nama:a.nama.trim(), tanggalLahir:a.tgl, statusUsia: cekEligibilitas(form.kategori,a.tgl), fileName:a.fileName, fileData:a.fileData }));
+    try{
+      const res = await callApi('addKelompok', {
+        tpaId: state.tpa.id, namaTPA: state.tpa.nama, kelurahan: state.tpa.kelurahan,
+        kategori: form.kategori, cabang: form.cabang, namaKelompok: form.namaKelompok.trim(),
+        anggota: anggotaFinal.map(a=>({nama:a.nama, tanggalLahir:a.tanggalLahir, statusUsia:a.statusUsia.sesuai?'Sesuai':'Tidak Sesuai', fileName:a.fileName, fileData:a.fileData})),
+        biaya: FEE_KELOMPOK
+      });
+      if(!res.success) throw new Error(res.error||'Gagal menyimpan kelompok');
+      state.kelompok.push({ rowIndex: res.data.rowIndex, nomor: res.data.nomor, namaKelompok: form.namaKelompok.trim(), kategori: form.kategori, cabang: form.cabang, anggota: anggotaFinal });
+      state.modal = null; render();
+    }catch(err){ alert('Gagal: '+err.message); btn.disabled=false; btn.textContent='Simpan Kelompok'; }
+  };
+  renderAnggota();
+  return wrap;
+}
+
+/* ---- STEP 2: Rekapitulasi ---- */
+function renderStep3(){
+  const totalIndividu = state.peserta.length*FEE_INDIVIDU;
+  const totalKelompok = state.kelompok.length*FEE_KELOMPOK;
+  const total = totalIndividu+totalKelompok;
+  const rowsP = state.peserta.map(pesertaRowHtmlReadonly).join('');
+  const rowsK = state.kelompok.map(kelompokRowHtmlReadonly).join('');
+  const c = el(`<div class="card">
+    <h2>Rekapitulasi Kontingen</h2>
+    <p class="sub"><b>${state.tpa.nama}</b> — Kelurahan ${state.tpa.kelurahan}</p>
+
+    <h3 style="font-size:14.5px;color:#8a6b6b;margin:18px 0 4px;">PESERTA INDIVIDU (${state.peserta.length})</h3>
+    ${state.peserta.length? `<table><thead><tr><th>No.</th><th>Nama</th><th>Kategori</th><th>Cabang</th><th>Klasifikasi</th><th>Biaya</th></tr></thead><tbody>${rowsP}</tbody></table>` : `<p style="color:#a58f8f;font-size:13px;">Tidak ada peserta individu.</p>`}
+
+    <h3 style="font-size:14.5px;color:#8a6b6b;margin:22px 0 4px;">KELOMPOK / GROUP (${state.kelompok.length})</h3>
+    ${state.kelompok.length? `<table><thead><tr><th>No.</th><th>Nama Kelompok</th><th>Kategori</th><th>Cabang</th><th>Anggota</th><th>Biaya</th></tr></thead><tbody>${rowsK}</tbody></table>` : `<p style="color:#a58f8f;font-size:13px;">Tidak ada kelompok.</p>`}
+
+    <div class="totalbar">
+      <div>
+        Individu: ${state.peserta.length} × ${money(FEE_INDIVIDU)} = ${money(totalIndividu)}<br>
+        Kelompok: ${state.kelompok.length} × ${money(FEE_KELOMPOK)} = ${money(totalKelompok)}
+      </div>
+      <div class="amt">${money(total)}</div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-back1">← Kembali &amp; Ubah Data</button>
+      <button class="btn btn-primary" id="btn-lanjut-bayar">Lanjut ke Pembayaran →</button>
+    </div>
+  </div>`);
+  c.querySelector('#btn-back1').onclick = ()=>{ state.step=1; render(); };
+  c.querySelector('#btn-lanjut-bayar').onclick = ()=>{ state.step=3; render(); };
+  return c;
+}
+function pesertaRowHtmlReadonly(p){
+  return `<tr><td><b>${p.nomor}</b></td><td>${p.nama}</td><td>${p.kategori}</td><td>${p.cabang}</td><td>${p.klasifikasi}</td><td>${money(FEE_INDIVIDU)}</td></tr>`;
+}
+function kelompokRowHtmlReadonly(k){
+  return `<tr><td><b>${k.nomor}</b></td><td>${k.namaKelompok}</td><td>${k.kategori}</td><td>${k.cabang}</td><td>${k.anggota.length} orang</td><td>${money(FEE_KELOMPOK)}</td></tr>`;
+}
+
+/* ---- STEP 3: Pembayaran ---- */
+function renderStep4(){
+  const total = state.peserta.length*FEE_INDIVIDU + state.kelompok.length*FEE_KELOMPOK;
+  const c = el(`<div class="card">
+    <h2>Pembayaran Biaya Pendaftaran</h2>
+    <p class="sub">Transfer sesuai total tagihan, lalu unggah bukti transfer.</p>
+
+    <div class="totalbar"><div>Total Tagihan Kontingen ${state.tpa.nama}</div><div class="amt">${money(total)}</div></div>
+
+    <div class="pay-box">
+      <div style="font-size:12.5px;color:#8a6b0f;font-weight:700;text-transform:uppercase;letter-spacing:.05em;">Transfer ke rekening panitia</div>
+      <div class="rek">Bank ${BANK_INFO.bank} — ${BANK_INFO.norek}</div>
+      <div style="font-size:13.5px;color:#5a4b2f;">a.n. ${BANK_INFO.atasNama}</div>
+    </div>
+
+    <label style="margin-top:20px;">Upload Bukti Transfer</label>
+    <div class="file-input" id="pay-file-box">Klik untuk pilih file (JPG, PNG, atau PDF)</div>
+    <input type="file" id="pay-file" accept=".jpg,.jpeg,.png,.pdf,image/*,application/pdf" style="display:none">
+
+    <div class="btn-row">
+      <button class="btn btn-ghost" id="btn-back2">← Kembali</button>
+      <button class="btn btn-primary" id="btn-selesai">Kirim Bukti &amp; Selesaikan Pendaftaran</button>
+    </div>
+  </div>`);
+  const fbox = c.querySelector('#pay-file-box'), finput = c.querySelector('#pay-file');
+  fbox.onclick = ()=> finput.click();
+  finput.onchange = async ()=>{
+    const f = finput.files[0]; if(!f) return;
+    state.pembayaran.fileName = f.name; state.pembayaran.fileData = await fileToBase64(f);
+    fbox.textContent = "✓ " + f.name; fbox.classList.add('has-file');
+  };
+  c.querySelector('#btn-back2').onclick = ()=>{ state.step=2; render(); };
+  c.querySelector('#btn-selesai').onclick = async ()=>{
+    if(!state.pembayaran.fileData){ alert('Mohon unggah bukti transfer terlebih dahulu.'); return; }
+    const btn = c.querySelector('#btn-selesai'); btn.disabled=true; btn.textContent='Mengirim...';
+    try{
+      const res = await callApi('addPembayaran', {
+        tpaId: state.tpa.id, namaTPA: state.tpa.nama, total,
+        fileName: state.pembayaran.fileName, fileData: state.pembayaran.fileData
+      });
+      if(!res.success) throw new Error(res.error||'Gagal mengirim bukti pembayaran');
+      state.pembayaran.terkirim = true;
+      state.step = 4; render();
+    }catch(err){ alert('Gagal: '+err.message); btn.disabled=false; btn.textContent='Kirim Bukti & Selesaikan Pendaftaran'; }
+  };
+  return c;
+}
+
+/* ---- STEP 4: Selesai + Download Cocard ---- */
+function renderStepEnd(){
+  const total = state.peserta.length*FEE_INDIVIDU + state.kelompok.length*FEE_KELOMPOK;
+  const c = el(`<div class="card">
+    <h2>Pendaftaran Terkirim ✓</h2>
+    <p class="sub">Terima kasih, kontingen <b>${state.tpa.nama}</b> telah terdaftar. Panitia akan memverifikasi bukti pembayaran Anda.</p>
+    <table>
+      <tr><td>Jumlah Peserta Individu</td><td><b>${state.peserta.length}</b></td></tr>
+      <tr><td>Jumlah Kelompok</td><td><b>${state.kelompok.length}</b></td></tr>
+      <tr><td>Total Biaya</td><td><b>${money(total)}</b></td></tr>
+      <tr><td>Status Pembayaran</td><td><span class="pill pill-warn">Menunggu Verifikasi Panitia</span></td></tr>
+    </table>
+    <div class="btn-row">
+      <button class="btn btn-gold" id="btn-download-cocard">⬇ Download Seluruh Cocard (PDF)</button>
+      <button class="btn btn-outline" id="btn-baru">+ Daftar Kontingen Baru</button>
+    </div>
+  </div>`);
+  c.querySelector('#btn-download-cocard').onclick = ()=> generateCocardPDF();
+  c.querySelector('#btn-baru').onclick = ()=>{ location.reload(); };
+  return c;
+}
+
+/* ============ COCARD PDF ============ */
+function generateCocardPDF(){
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({ orientation:'landscape', unit:'mm', format:[148,105] });
+  const items = [];
+  state.peserta.forEach(p=> items.push({ nomor:p.nomor, nama:p.nama, ket:p.cabang+' - '+p.kategori }));
+  state.kelompok.forEach(k=> items.push({ nomor:k.nomor, nama:k.namaKelompok+' (Tim)', ket:k.cabang+' - '+k.kategori, anggota:k.anggota.map(a=>a.nama).join(', ') }));
+
+  items.forEach((it,i)=>{
+    if(i>0) doc.addPage([148,105],'landscape');
+    doc.setFillColor(196,30,36);
+    doc.rect(0,0,148,105,'F');
+    doc.setDrawColor(212,175,55); doc.setLineWidth(1.2);
+    doc.rect(2,2,144,101);
+    doc.setTextColor(255,255,255);
+    doc.setFont('times','bold'); doc.setFontSize(20);
+    doc.text('PESERTA', 8, 18);
+    doc.setFontSize(9); doc.setFont('helvetica','normal');
+    doc.text('FESTIVAL ANAK SHOLEH INDONESIA', 8, 25);
+
+    function field(label, value, y){
+      doc.setFillColor(255,255,255);
+      doc.roundedRect(60, y, 82, 16, 2, 2, 'F');
+      doc.setTextColor(150,20,20); doc.setFontSize(8); doc.setFont('helvetica','bold');
+      doc.text(label, 63, y+5.5);
+      doc.setTextColor(30,15,15); doc.setFontSize(10);
+      const lines = doc.splitTextToSize(value||'-', 76);
+      doc.text(lines, 63, y+11);
+    }
+    field('NAMA', it.nama, 12);
+    field('CABANG LOMBA - TINGKAT', it.ket, 32);
+    doc.setFillColor(255,255,255);
+    doc.roundedRect(60, 52, 82, 44, 2, 2, 'F');
+    doc.setTextColor(150,20,20); doc.setFontSize(8); doc.setFont('helvetica','bold');
+    doc.text('NOMOR PESERTA', 63, 58);
+    doc.setTextColor(30,15,15); doc.setFontSize(22); doc.setFont('times','bold');
+    doc.text(it.nomor, 63, 72);
+    if (it.anggota){
+      doc.setFontSize(8); doc.setFont('helvetica','normal'); doc.setTextColor(90,70,70);
+      const lines = doc.splitTextToSize('Anggota: '+it.anggota, 76);
+      doc.text(lines, 63, 82);
+    }
+    doc.setTextColor(255,255,255); doc.setFontSize(8); doc.setFont('helvetica','normal');
+    doc.text('TPA: '+state.tpa.nama+' — '+state.tpa.kelurahan, 8, 98);
+  });
+  doc.save('Cocard-Peserta-'+state.tpa.nama.replace(/\s+/g,'_')+'.pdf');
+}
+
+/* ============ INIT ============ */
+function renderStep1(){ return renderPesertaStep(); }
+render();
+</script>
+</body>
+</html>
